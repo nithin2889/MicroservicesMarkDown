@@ -244,13 +244,13 @@ tons of data, which you can look at and see what's going wrong.
 The other interesting command related to the containers is ```docker container prune```. This would remove all the stopped containers 
 from the local machine.
 
-Earlier, we looked at the ```docker stop``` which would gracefully shutdown the container. What do I mean by a graceful shutdown? When 
-you shutdown a container, in the logs at the end you can see, after the starting of the application, there is something called 
-Shutting down ExecutorService. its closing the EntityManagerFactory and then, it's dropping the table sequences and it's shutting down 
-the connection pool. So in a graceful shutdown, the container was given some time to finish its processes to shutdown gracefully. So, 
-things like closing out the connection pool, things like shutting down the ExecuterService, the container was given time to do all 
-that stuff. In technical terms, when I do a container stop, the signal which is sent to the container is something called 
-```SIGTERM```. It means, take about 10 seconds and make sure that you gracefully complete your execution.
+Earlier, we looked at the ```docker container stop``` which would gracefully shutdown the container. What do I mean by a graceful 
+shutdown? When you shutdown a container, in the logs at the end you can see, after the starting of the application, there is something 
+called Shutting down ExecutorService. its closing the EntityManagerFactory and then, it's dropping the table sequences and it's 
+shutting down the connection pool. So in a graceful shutdown, the container was given some time to finish its processes to shutdown 
+gracefully. So, things like closing out the connection pool, things like shutting down the ExecuterService, the container was given 
+time to do all that stuff. In technical terms, when I do a container stop, the signal which is sent to the container is something 
+called ```SIGTERM```. It means, take about 10 seconds and make sure that you gracefully complete your execution.
 
 Another command is ```docker container kill <container-id>```. By doing this, the container would be stopped as it is. It was not 
 really given time to do anything. It stopped dead. In technical terms, what happens is, in here, a signal called ```SIGKILL``` is sent 
