@@ -264,13 +264,13 @@ restart policy. Two of the most popular values for a restart policy are `always`
 automatically started. Whenever you restart the Docker Daemon restarts, it sees if there are any container with the restart policy of 
 always and would launch them up. The only way you can actually prevent the restart from happening is to first stop this up.
 
-## **Playing with Docker Commands - stats, system
+## **Playing with Docker Commands - stats, system**
 The first command we will be looking at is ```docker events```. This would help us to see what events are happening with Docker 
 Daemon. Events like containers being stopped, being disconnected from the network, volume unmounted, etc. So, if you'd want to see 
 what's happening with your Docker environment, what is it doing, you can use this command to see what's happening in the background.
 
-The other interesting is ```docker top <container-id>```. This is actually used to see all the processes which are running in that
-specific container.
+The other interesting command is ```docker top <container-id>```. This is actually used to see all the processes which are running in 
+that specific container.
 
 The other interesting command is ```docker stats```. This would show all the stats regarding the containers which are running, what 
 its name is, how much amount of CPU is it making use of, how much memory is it making use of, what is the limit of memory, what is the 
