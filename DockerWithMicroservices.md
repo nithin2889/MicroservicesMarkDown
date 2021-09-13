@@ -304,3 +304,132 @@ microservices.
 
 Here, we will launch a Distributed Tracing Server called `Zipkin` as a Docker container and connect all our microservices to this 
 specific Zipkin server.
+
+## **Launching Zipkin Container using Docker**
+The command to launch up the distributed tracing server is, ```docker run -p 9411:9411 openzipkin/zipkin:2.23```. Here, 
+`openzipkin/zipkin` is the authoritative image for Zipkin, a distributed tracing system. Instead of creating a Java project for 
+Zipkin, what we are doing is, we are launching it as a Docker container and this is very, very cool because you don't really need to 
+store anything about Zipkin in your local machine. All that you need to run is a Docker command. It would download the Docker image 
+for openzipkin and it would automatically run it. We don't really need to worry about anything related to Zipkin.
+
+Once the Zipkin disributed tracing server start up, you can launch it up via `http://localhost:9411/zipkin/`. Next we will try to 
+connect all the microservices to Zipkin.
+
+## **Connecting CurrencyExchange microservice to Zipkin**
+Let's try and trace everything that comes to CurrencyExchangeService using Zipkin. The first thing I would need to do is I would need to add in a set of dependencies.
+
+Whenever we are talking about microservices and tracing, you'd want to be able to trace the request across multiple microservices. And 
+to be able to do that, each request should be assigned a unique ID. So, spring cloud starter sleuth is one of the frameworks which 
+actually assigns a unique ID to each request. As the request goes across multiple microservices, the ID is maintained and the 
+information is sent out to the tracing server using that specific ID and this allows us to trace the requests across multiple 
+microservices. That's the reason why we would need spring-cloud-starter-sleuth.
+
+```
+<dependency>
+  <groupId>org.springframework.cloud</groupId>
+  <artifactId>spring-cloud-starter-sleuth</artifactId>
+</dependency>
+```
+
+The next dependency that we would want is spring-cloud-sleuth-zipkin. This is a Zipkin specific dependency that we are adding in.
+
+```
+<dependency>
+  <groupId>org.springframework.cloud</groupId>
+  <artifactId>spring-cloud-sleuth-zipkin</artifactId>
+</dependency>
+```
+
+The next dependency that we would add in is not really needed for now is,
+
+```
+<dependency>
+  <groupId>org.springframework.amqp</groupId>
+  <artifactId>spring-rabbit</artifactId>
+</dependency>
+```
+
+Right now, what we are trying to do is actually directly connect to distributed tracing server over HTTP. So, API Gateway, 
+CurrencyConversionService, CurrencyExchangeService, all of these would be sending the information out to the Distributed Tracing 
+Server using HTTP calls. And the distributed tracing server would be storing it to an in-memory database and be providing a UI around 
+it.
+
+However, consider a scenario when the Distributed Tracing Server is down. What would happen? he information from the microservices is 
+lost and to prevent that from happening what we can do is, we can have a queue in between. We can have a queue like RabbitMQ in 
+between. All the microservices can send the information out to the RabbitMQ queue and the Distributor Tracing Server can pick up the 
+information from the RabbitMQ. This would ensure that even if the Distributor Tracing Server is down, the microservices can keep 
+sending messages to RabbitMQ. And when the Distributor Tracing Server is up, it can pick up the messages from the queue which is the 
+recommended architecture.
+
+However, in this specific step, we'd be implementing this specific architecture where we would be using HTTP. We will be running the 
+above architecture a little later when we will create individual containers for these microservices and will be running everything in 
+this picture as a container. 
+
+In addition to the three dependencies, we would need a simple configuration, it's called `Sampling configuration`. Whenever we talk 
+about sleuth or distributed tracing, we don't want to trace every request that goes between the microservices. What we want to do is 
+to sample a percentage of the requests. If it trace every request, then there'll be a big performance impact. To avoid that, we 
+configure something called `sampling`. We would want to sample, let's say, 10% or 20% of the requests. The way we can configure 
+sampling is by going to `application.properties` for CurrencyExchangeService.
+
+This below property would trace only 10% of the requests coming in for CurrencyExchangeService.
+
+```
+spring.sleuth.sampler.probability=0.1
+```
+
+Once done, we can launch CurrencyExchangeService using `http://localhost:8000/currency-exchange/from/USD/to/INR`. However, the new 
+thing is that we have added in tracing. If you go ahead and refresh in Zipkin Distributed Tracing UI, you'd see now that there is a 
+trace. There will be a trace ID which is assigned to this and you can find all the details related to the endpoint to which the 
+request was made.
+
+However, this is not useful. There is just one particular microservice which is connected to distributed tracing server. However, only 
+when we connect all the other microservices, you will see the magic unfold. Spring Cloud Sleuth will assign unique IDs to each and 
+every request that we make to an endpoint. This is really, really useful to trace the requests across multiple microservices.
+
+## **Connecting CurrencyConversionService and API Gateway with Zipkin**
+We need to copy the same dependencies inside CurrencyConversionService and API Gateway microservices that we added to 
+CurrencyExchangeService microservice.
+
+```
+<dependency>
+  <groupId>org.springframework.cloud</groupId>
+  <artifactId>spring-cloud-starter-sleuth</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.springframework.cloud</groupId>
+  <artifactId>spring-cloud-sleuth-zipkin</artifactId>
+</dependency>
+
+<dependency>
+  <groupId>org.springframework.amqp</groupId>
+  <artifactId>spring-rabbit</artifactId>
+</dependency>
+```
+
+The next thing to configure is the sampling the same way we did for CurrencyExchangeService microservice.
+
+```
+spring.sleuth.sampler.probability=1.0
+```
+
+So, API Gateway, CurrencyConversionService, and the CurrencyExchangeService all have the configuration that they would need to connect 
+to Zipkin Distributed Tracing Server.
+
+You can also see that we are launching up all the microservices manually and this is very, very tedious job to check manually if 
+each and every microservices whether they are up and then firing requests against them takes a lot of time. We would be looking at 
+something called as `Docker Compose`, which would really help us to make the launch of these different microservices very, very easy.
+
+Once the setup is completed, you can see that there are a lot of requests in here. You would be able to see all the URLs that you
+fire; CurrencyConversionService, API Gateway, CurrencyExchangeService. We usually pick up one of the API Gateway ones with a span 
+of 5. This means it's one which is going through multiple microservices. Any request fired would be intercepted by the API Gateway 
+will be redirected to the CurrencyConversionService and in CurrencyConversionService it would in turn call the CurrencyExchangeService.
+
+### **How are the microservices able to locate the Zipkin distributed tracing server?**
+We just added a few dependencies and somehow magically, they were able to find the distributed tracing server and send the logs over. 
+How is that happening? That's happening because of the default configuration. By default, `spring.zipkin.baseUrl` a property you can 
+configure with the Zipkin URL, is configured with `http://localhost:9411` and because we are actually running Zipkin on the same URL, 
+it's able to easily find it. If you are running Zipkin on a different URL, you might also need to configure this as well.
+
+## **Getting setup with microservies for creating container images**
+Now, let's run each of these microservices as containers and see how we can actually launch them up in a very, very easy way. Instead of manually launching up each application or container individually, is there a way we can actually launch up all of them together?
