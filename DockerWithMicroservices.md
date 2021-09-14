@@ -513,3 +513,53 @@ After building the image, we need to run this image. We know already CurrencyExc
 is by executing the command `docker run -p 8000:8000 nithin2889/mmv2-currency-exchange-service:0.0.1-SNAPSHOT`. If you go and launch 
 the CurrencyExchangeService URL `http://localhost:8000/currency-exchange/from/USD/to/INR`, then you should be able to see the response 
 for it.
+
+## **Getting started with Docker Compose - CurrencyExchangeService**
+We would want to create containers for all the microservices that we have and also we'd want to launch Zipkin and RabbitMQ. Launching 
+up each one of these with commands like we executed until now is not going to be an easy thing and that's the reason why we go for 
+something called `Docker Compose`.
+
+`Docker Compose` is a tool for defining and running multi-container Docker applications. You can simply configure a YAML file and with 
+a single command, you can launch up all the services defined inside this YAML file. Using Docker Compose is very, very easy. Docker 
+Compose is already included as part of Docker Desktop for Mac and Windows.
+
+Let's use Docker Compose and run our microservices. Inside our `docker-compoese.yaml` file, we will define all the things that are 
+needed. In Docker Compose, each container that we launch is a service. That's why we would need to define services in the YAML file. 
+Since we would launch up a lot containers we have to put a `memory limit` on each one of them. In this case, it is `700 megabytes` of 
+memory for currency-exchange container. Next thing we have configured are the `ports` on which it has to be run. We can actually 
+configure multiple sets of ports as shown below.
+
+```
+version: '3.7'
+
+services:
+  currency-exchange:
+    image: nithin2889/mmv2-currency-exchange-service:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8000:8000"
+```
+
+To launch the container, we would use the command, `docker-compose up` to start up whatever is configured in there. After which you 
+will be able to see that it creates a network and finally starts up our application. Now, if you pick up the URL of 
+CurrencyExchangeService and run it, then you should be able to see the response from the endpoint.
+
+One of the good practices when it comes to Docker Compose is to create a `network` as well. So, right now we are using the default 
+network which is created by Docker Compose. The below script addition would help us to create a network and associate 
+CurrencyExchangeService microservice with the network.
+
+```
+version: '3.7'
+
+services:
+  currency-exchange:
+    image: nithin2889/mmv2-currency-exchange-service:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8000:8000"
+    networks:
+      - currency-network
+
+networks:
+  currency-network:
+```
