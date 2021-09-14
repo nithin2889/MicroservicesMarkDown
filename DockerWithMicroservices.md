@@ -433,3 +433,83 @@ it's able to easily find it. If you are running Zipkin on a different URL, you m
 
 ## **Getting setup with microservies for creating container images**
 Now, let's run each of these microservices as containers and see how we can actually launch them up in a very, very easy way. Instead of manually launching up each application or container individually, is there a way we can actually launch up all of them together?
+
+## **Creating container image for CurrencyExchangeService**
+Before Spring Boot v2.3, there was a lot of process in creating a Docker Container for Spring Boot or Java applications. But Spring Boot in the version 2.3, made it very, very easy to create Docker containers. All that you need to do is to use the Maven plugin, which is already in here. We can use this spring-boot-maven-plugin to create a image for our container.
+
+```
+<build>
+  <plugins>
+    <plugin>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-maven-plugin</artifactId>
+    </plugin>
+  </plugins>
+</build>
+```
+
+#### **How can we create an image for our container using `spring-boot-maven-plugin`?**
+To this spring-boot-maven-plugin, I would want to add in a little bit of configuration. I'd want to configure a name for my Docker 
+image. Earlier, when we launched up Zipkin, we used the name as openzipkin/zipkin:2.23. Similar to this, I would want to create a name 
+for my image.
+
+```
+<build>
+  <plugins>
+    <plugin>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-maven-plugin</artifactId>
+      <configuration>
+        <image>
+          <name>nithin2889/mmv2-${project.artifactId}:${project.version}</name>
+        </image>
+      </configuration>
+    </plugin>
+  </plugins>
+</build>
+```
+
+Here, `nithin2889` is my Docker ID and all my Docker images would be created under `nithin2889`. The next thing that we are trying to 
+do in here `mmv2` is just a prefix and is optional, then `${project.artifactId}` would be `currency-exchange-service` and 
+`${project.version}` would be `0.0.1-SNAPSHOT`. So, this Docker image would have the name as 
+`mmv2-currency-exchange-service:0.0.1-SNAPSHOT`. This forms the first part of our configuration.
+
+The second thing is to be able to create the Docker image. The `spring-boot-maven-plugin` makes use of lot of Docker images and for 
+these Docker images, I would want to configure a `pullPolicy` of `IF_NOT_PRESENT`, the default is `ALWAYS`. Whenever you would build a 
+container image, Spring Boot would fetch the base images and build the image for your specific project and all these base images which 
+are needed, `spring-boot-maven-plugin` by default would get them from the Docker Registry. However, what we are configuring in here is 
+to make it a little bit more efficient. What we are saying is, to pull the base images only if they are not present locally, otherwise 
+use the images which are present locally.
+
+```
+<build>
+  <plugins>
+    <plugin>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-maven-plugin</artifactId>
+      <configuration>
+        <image>
+          <name>nithin2889/mmv2-${project.artifactId}:${project.version}</name>
+        </image>
+        <pullPolicy>IF_NOT_PRESENT</pullPolicy>
+      </configuration>
+    </plugin>
+  </plugins>
+</build>
+```
+
+What we would want to do now is I would want to create an image for this particular microservice. We can do that by specifying a Maven 
+goal `build-image` as shown below.
+
+`spring-boot:build-image -DskipTests`
+
+The build of the Docker image would take a lot of time. Firstly, it will building a JAR file, and then it would go in, and actually 
+build the image for our specific container. To build the Docker image, there are a lot of base images which are being made use of. So, 
+you can see that all those images would be pulled in. So, the first time we run this, it should take a considerable amount of time to 
+run because this would run, this would download most of the base images. You would see that there are multiple layers added into our 
+Docker image and there are also lot of labels added in and finally, we will have our image built.
+
+After building the image, we need to run this image. We know already CurrencyExchangeService runs on port 8000. The way we can do that 
+is by executing the command `docker run -p 8000:8000 nithin2889/mmv2-currency-exchange-service:0.0.1-SNAPSHOT`. If you go and launch 
+the CurrencyExchangeService URL `http://localhost:8000/currency-exchange/from/USD/to/INR`, then you should be able to see the response 
+for it.
