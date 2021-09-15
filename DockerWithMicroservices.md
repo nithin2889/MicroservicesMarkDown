@@ -1,4 +1,4 @@
-## Docker & Microservices - A match made in heaven
+## **Docker & Microservices - A match made in heaven**
 As part of our microservices architectures, we build a number of small focused microservices. One of the biggest 
 advantages of microservices is the flexibility to innovate and build applications in different programming languages. 
 You can build microservices using Java and Spring Boot, or you can also build microservices using Go, Python, 
@@ -29,7 +29,7 @@ the Cloud; whether it is AWS, Azure or Google Cloud, all of these support runnin
 of ways. The containers are one of the most important evolutions as far as microservices architecture is concerned in 
 the last decade.
 
-## First Docker Usecase - Deploy a Spring Boot Application
+## **First Docker Usecase - Deploy a Spring Boot Application**
 Let's discuss a usecase where Docker is most useful. You're working on a team and you are the star developer in the team.
 You're working on a challenging project with very tight deadlines. You'd want a application deployed to an environment quickly.
 You have a very good friend of yours working in the operations team and you go to him and tell, 
