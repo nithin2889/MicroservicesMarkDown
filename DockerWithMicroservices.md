@@ -81,16 +81,17 @@ press Enter, you would go to something called a **Repository**. So, **https://hu
 repositories, and inside that, **in28min/todo-rest-api-h2** is a repository storing all the versions of a specific application. So, 
 this is something that hosts a number of tags and we specified **1.0.0.RELEASE** as the version that we would want to use. Now you 
 might be wondering, what does this image contain? You'd see that the image is about 102 MB. This image actually contains all the 
-things that your application needs to run. It contains the right software. For example, a specific version of Java; Java 8 or Java 11, 
-whichever version you'd want. It contains all the libraries your API needs. Your todo-rest-api might need 15 libraries; it contains 
-all of them and it contains any other dependency that your application might need to be able to run. 
+things that your application needs to run. It contains the right software. For example, a specific version of Java; Java 8 or Java 
+11, whichever version you'd want. It contains all the libraries your API needs. Your todo-rest-api might need 15 libraries; it 
+contains all of them and it contains any other dependency that your application might need to be able to run. 
 
 When we ran the command, ```docker run in28min/todo-rest-api-h2:1.0.0.RELEASE```, this image was downloaded to our machine. So, a 
 local image was created. So, from the registry, the image is downloaded to your machine and once the image is downloaded, it is ran as
 an application in your machine and this is what is called a **Container**.
 
-**Image is something static**. So, on the repository, image is a set of bytes, that's it. When it's downloaded, even then the image is 
-just a set of bytes and when it's running, it's called a Container. So, image is a static version and **Container is a running version of the image** and for the same image, you can have multiple containers running.
+**Image is something static**. So, on the repository, image is a set of bytes, that's it. When it's downloaded, even then the image 
+is just a set of bytes and when it's running, it's called a Container. So, image is a static version and 
+**Container is a running version of the image** and for the same image, you can have multiple containers running.
 
 To access the application, we need to run the command with an extra option as shown below
 
@@ -100,7 +101,8 @@ To access the application, we need to run the command with an extra option as sh
 
 What happens is by default, any container that you run is part of something called a **bridge network** in Docker. You can kind of 
 think of it like an internal Docker network. Nobody will be able to access it, unless you specifically expose it onto the host, onto 
-the system, where your container is running. What we are doing in here is we are saying ***I'd want to take the internal port, that is, the container port 5000, and map/publish it to a host port through a port on the system where the container is running, which is 5000.*** You'd see that the application is launched up. Next, you would be able to access the APIs that are exposed as part of the application.
+the system, where your container is running. What we are doing in here is we are saying ***I'd want to take the internal port, that is, the container port 5000, and map/publish it to a host port through a port on the system where the container is running, which is 5000.*** You'd see that the application is launched up. Next, you would be able to access the APIs that are exposed as part of the 
+application.
 
 ## **Playing with Docker Images and Containers**
 One thing to know is you'd want your application to be always running. You don't want it to be killed when you do Control-C. How can 
@@ -110,8 +112,8 @@ we do that? We can do so by using the **-d option**.
 
 Here, -d stands for **detached mode**. This would run the container in the background. We don't want to tie up the terminal to the 
 lifecycle of the container. So, we'd want to detach it from that. If you press Enter, you would get a container ID and that's it. If 
-you'd want to see the logs, you can say ```docker logs <container_id>```. By this, you can see the some of the logs from that specific 
-application. If you'd want to keep following the logs, the way you can do that is by using **-f option**.
+you'd want to see the logs, you can say ```docker logs <container_id>```. By this, you can see the some of the logs from that 
+specific application. If you'd want to keep following the logs, the way you can do that is by using **-f option**.
 
 ```docker logs -f <container_id>```
 
@@ -132,8 +134,8 @@ The command to stop the containers which are running, we use ```docker container
 The place we were running the commands in is called a **Docker Client** and when we type something in the Docker client, the command 
 is sent out to something called a **Docker Daemon** or a **Docker Engine** for execution. So, even the local installation of Docker 
 uses a client-server kind of architecture. So, when we install Docker Desktop, we were installing both the Docker Client and the 
-Docker Daemon. The Docker Daemon is responsible for managing the containers, it's responsible for managing the local images, and it is 
-responsible for pulling something from the Image Registry if you'd need it or pushing a locally created image to a Image Registry. 
+Docker Daemon. The Docker Daemon is responsible for managing the containers, it's responsible for managing the local images, and it 
+is responsible for pulling something from the Image Registry if you'd need it or pushing a locally created image to a Image Registry. 
 The first two parts of that is very easy. The Docker Daemon is responsible for Containers and Local Images.
 
 When we ran the command ```docker container ls -a```, you would see all the images that we have created and stopped. These containers 
@@ -198,12 +200,12 @@ official Image.
 
 You can do ```docker image history <image_id>/<repository_name:tag>``` and look at the history of a image. What you would see are the 
 steps involved in creating that specific image. You'd see that in certain steps, there is a file size attached. So, there is a layer 
-added in with about 5 MB and after that, there are a number of instructions which were run to create that image, and after that, there 
-is another layer added in with 99.3MB which is the largest layer in here and this one is typically the layer where we add in Java. So, 
-the JDK which is added in is about 99 MB and after that, there are couple more instructions which are run. You would see that we are 
-exposing port 5000 on that specific image and you can see that a file is added in. Typically, when we are talking about Spring Boot 
-application, that's a jar file. So, you would see that, the size is about 38 MB and there were a few Java options which were set and a 
-command is set to run something when a container is created from this. 
+added in with about 5 MB and after that, there are a number of instructions which were run to create that image, and after that, 
+there is another layer added in with 99.3MB which is the largest layer in here and this one is typically the layer where we add in 
+Java. So, the JDK which is added in is about 99 MB and after that, there are couple more instructions which are run. You would see 
+that we are exposing port 5000 on that specific image and you can see that a file is added in. Typically, when we are talking about 
+Spring Boot application, that's a jar file. So, you would see that, the size is about 38 MB and there were a few Java options which 
+were set and a command is set to run something when a container is created from this. 
 
 The important thing for you to understand is, when you do a ```docker image history <image ID/repository_name:tag>```, you'd get all 
 the history, all the steps that were involved in creating that specific image. 
@@ -221,12 +223,15 @@ You can also do something called ```docker image inspect <image_id>```. When you
 * you can see all the `environment variables` which were set; PATH, JAVA_HOME, JAVA_VERSION, JAVA_ALPINE_VERSION and all that stuff
 * you can see a lot of `information about the folder structure`, the different layers which are present and all that stuff.
 
-You can also remove an image from your local machine using ```docker image remove <image_id>``` and not really delete it from the Docker Registry.
+You can also remove an image from your local machine using ```docker image remove <image_id>``` and not really delete it from the 
+Docker Registry.
 
 ## **Playing with Docker Containers**
-Earlier we created a container by using ```docker run -p 5000:5000 -d in28min/todo-rest-api-h2:1.0.0.RELEASE```. The interesting thing is the fact that this is actually a shortcut for a command, actually called 
+Earlier we created a container by using ```docker run -p 5000:5000 -d in28min/todo-rest-api-h2:1.0.0.RELEASE```. The interesting 
+thing is the fact that this is actually a shortcut for a command, actually called 
 ```docker container run -p 5000:5000 -d in28min/todo-rest-api-h2:1.0.0.RELEASE``` but the thing you'd need to understand is actually 
-what you are running is a container. So, we are creating a container from a specific image. This would actually launch up a docker container. 
+what you are running is a container. So, we are creating a container from a specific image. This would actually launch up a docker 
+container. 
 
 One of the interesting things is, you can pause and unpause a container. So, you can say, 
 ```docker container pause <ID_from_detached_state>```. Once you do this, the container would be paused. If you check the logs of this 
@@ -235,11 +240,11 @@ this is in a paused state. To unpause it, ```docker container unpause <ID_from_d
 back from the application URLs. So, pause just stops the container in that specific state.
 
 ```docker container stop <container_id>``` would stop a running container. You can also inspect a container by using 
-```docker container inspect <container_id>```. When you do a docker container inspect, you can see tons of details about that specific 
-container, the image it is created from, a lot of a metadata about the container itself when it was created, the current status, You 
-can see what's the platform, the details about the image, the port bindings, the volumes and a lot of other stuffs. Whenever we are 
-expecting something to happen with a container and it's not happening, probably this is the place you can look at. This would give you 
-tons of data, which you can look at and see what's going wrong. 
+```docker container inspect <container_id>```. When you do a docker container inspect, you can see tons of details about that 
+specific container, the image it is created from, a lot of a metadata about the container itself when it was created, the current 
+status, You can see what's the platform, the details about the image, the port bindings, the volumes and a lot of other stuffs. 
+Whenever we are expecting something to happen with a container and it's not happening, probably this is the place you can look at. 
+This would give you tons of data, which you can look at and see what's going wrong.
 
 The other interesting command related to the containers is ```docker container prune```. This would remove all the stopped containers 
 from the local machine.
