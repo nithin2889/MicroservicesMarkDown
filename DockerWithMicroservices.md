@@ -563,3 +563,542 @@ services:
 networks:
   currency-network:
 ```
+
+## **Running Eureka Naming Server with Docker Compose**
+The steps which we followed should be exactly the same as what we did for currency-exchange-service. So, we start with actually going 
+to the pom.xml of the naming server and copying exactly the same configuration that we had for currency-exchange-service.
+
+```
+<build>
+  <plugins>
+    <plugin>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-maven-plugin</artifactId>
+      <configuration>
+        <image>
+          <name>nithin2889/mmv2-${project.artifactId}:${project.version}</name>
+        </image>
+        <pullPolicy>IF_NOT_PRESENT</pullPolicy>
+      </configuration>
+    </plugin>
+  </plugins>
+</build>
+```
+
+Next is to build image using the same command as before to create an image for this particular microservice. We can do that by 
+specifying a Maven goal `build-image` as shown below.
+
+`spring-boot:build-image -DskipTests`
+
+Let's focus on our Docker Compose file and let's try and get our Docker Compose for the Eureka naming server up and running. So, we'd 
+want to create an additional service. The name of the service I would want to call it is naming-server, with the same memory but with 
+port 8761. 
+
+Now, one of the things that you would know is the fact that the currency exchange depends on the naming server and therefore, we can 
+even specify that relationship in here using `depends_on` array. So, what we are specifying in here is the fact that currency-exchange 
+depends on the naming-server.
+
+```
+version: '3.7'
+
+services:
+  currency-exchange:
+    image: nithin2889/mmv2-currency-exchange-service:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8000:8000"
+    networks:
+      - currency-network
+    depends_on:
+      - naming-server
+  
+  naming-server:
+    image: nithin2889/mmv2-naming-server:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8761:8761"
+    networks:
+      - currency-network
+
+networks:
+  currency-network:
+```
+
+One important thing to remember is the fact that from inside a Docker container, localhost does not mean the same as running a 
+application on your machine. So, from inside the Docker container, when you try localhost:8761, it does not call localhost:8761 on 
+your machine. This refers to the localhost inside the Docker container. And that's the reason why the CurrencyExchangeService will be 
+unable to register itself with Eureka. Ensure Eureka is up and running. 
+
+To get the CurrencyExchangeService to register with Eureka naming server, one of the options is to have a configuration inside the 
+`application.properties` file and instead of `localhost`, we need to refer to the `naming-server` and everything would be hunky-dory 
+again. A simpler option would be to actually configure an environment variable. Go in and configure the property as an environment 
+variable for the container. To configure environment variables for the container, we should use `environment:` and use the property
+`eureka.client.serviceUrl.defaultZone=http://naming-server:8761/eureka` adhering to the docker-compose syntax with uppercase 
+characters `EUREKA.CLIENT.SERVICEURL.DEFAULTZONE` inside the `docker-compose.yaml` file.
+
+```
+version: '3.7'
+
+services:
+  currency-exchange:
+    image: nithin2889/mmv2-currency-exchange-service:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8000:8000"
+    networks:
+      - currency-network
+    depends_on:
+      - naming-server
+    environment:
+      - EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+  
+  naming-server:
+    image: nithin2889/mmv2-naming-server:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8761:8761"
+    networks:
+      - currency-network
+
+networks:
+  currency-network:
+```
+
+Next is to use `docker-compose up`. Now, naming-server would start up and then CurrencyExchangeService would get registered with the 
+naming-server. We should also be able to see CurrencyExchangeService getting registered in Eureka UI.
+
+## **Running Currency Conversion Microservice with Docker Compose**
+The steps which we followed should be exactly the same as what we did for currency-exchange-service. So, we start with actually going 
+to the pom.xml and copying exactly the same configuration that we had for currency-exchange-service.
+
+```
+<build>
+  <plugins>
+    <plugin>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-maven-plugin</artifactId>
+      <configuration>
+        <image>
+          <name>nithin2889/mmv2-${project.artifactId}:${project.version}</name>
+        </image>
+        <pullPolicy>IF_NOT_PRESENT</pullPolicy>
+      </configuration>
+    </plugin>
+  </plugins>
+</build>
+```
+
+Next is to build image using the same command as before to create an image for this particular microservice. We can do that by 
+specifying a Maven goal `build-image` as shown below.
+
+`spring-boot:build-image -DskipTests`
+
+Next, let's edit the `docker-compose.yaml` file.
+
+```
+version: '3.7'
+
+services:
+  currency-exchange:
+    image: nithin2889/mmv2-currency-exchange-service:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8000:8000"
+    networks:
+      - currency-network
+    depends_on:
+      - naming-server
+    environment:
+      - EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+
+  currency-conversion:
+    image: nithin2889/mmv2-currency-conversion-service:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8100:8100"
+    networks:
+      - currency-network
+    depends_on:
+      - naming-server
+    environment:
+      - EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+  
+  naming-server:
+    image: nithin2889/mmv2-naming-server:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8761:8761"
+    networks:
+      - currency-network
+
+networks:
+  currency-network:
+```
+
+Now, we are ready to launch the `docker compose up`. You can see that the launch is becoming simpler and simpler. Earlier, I had to 
+start up applications manually, but now whenever I would want to test this, I just need to execute a command and go and maybe have a 
+coffee and come back and all the applications would be up and running. There is no manual things that would be involved in launching 
+these applications from here on. At the end of the process, you should be able to launch up Eureka and in which we can see both 
+CurrencyConversion and CurrencyExchange being registered.
+
+## **Running Spring Cloud API Gateway with Docker Compose**
+We also want API Gateway to be added to the list of microservices which are being launched up from Docker Compose. So, we start with actually going to the pom.xml and copying exactly the same configuration that we had for currency-exchange-service again.
+
+```
+<build>
+  <plugins>
+    <plugin>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-maven-plugin</artifactId>
+      <configuration>
+        <image>
+          <name>nithin2889/mmv2-${project.artifactId}:${project.version}</name>
+        </image>
+        <pullPolicy>IF_NOT_PRESENT</pullPolicy>
+      </configuration>
+    </plugin>
+  </plugins>
+</build>
+```
+
+Next is to build image using the same command as before to create an image for this particular microservice. We can do that by 
+specifying a Maven goal `build-image` as shown below.
+
+`spring-boot:build-image -DskipTests`
+
+Next, let's edit the `docker-compose.yaml` file.
+
+```
+version: '3.7'
+
+services:
+  currency-exchange:
+    image: nithin2889/mmv2-currency-exchange-service:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8000:8000"
+    networks:
+      - currency-network
+    depends_on:
+      - naming-server
+    environment:
+      - EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+
+  currency-conversion:
+    image: nithin2889/mmv2-currency-conversion-service:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8100:8100"
+    networks:
+      - currency-network
+    depends_on:
+      - naming-server
+    environment:
+      - EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+
+  api-gateway:
+    image: nithin2889/mmv2-api-gateway:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8765:8765"
+    networks:
+      - currency-network
+    depends_on:
+      - naming-server
+    environment:
+      - EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+  
+  naming-server:
+    image: nithin2889/mmv2-naming-server:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8761:8761"
+    networks:
+      - currency-network
+
+networks:
+  currency-network:
+```
+
+Now, we are ready to launch the `docker compose up`. There are 4 components, 2 of which are microservices and we have a naming server 
+and an API gateway being launched up. At the end of the process, you should be able to launch up Eureka and in which we can see 
+**API Gateway, CurrencyConversion and CurrencyExchange microservices** being registered.
+
+#### **NOTE**
+Top recommendation from Debugging Guide is to add `restart: always` to Zipkin server in `docker-compose.yaml` file.
+
+## **Running Zipkin with Docker Compose**
+We got our basic microservices up and running. We also have the API Gateway and the Naming Servers up and running. Now, let's start 
+up Zipkin also using Docker Compose. 
+
+Earlier, when we ran Zipkin, the command we used was, `docker run -p 9411:9411 openzipkin/zipkin:2.23`. Let's quickly configure that 
+right now over here in Docker Compose. We'd also want to configure the URL of the Zipkin server in the other microservices. So, in 
+CurrencyExchange, CurrencyConversion and API Gateway, we need to tell it where the Zipkin server is present.
+
+And as we discussed earlier, we need to configure something called `spring.zipkin.baseUrl` but since we would be running the Zipkin 
+Server with the name `zipkin-server` we should replace localhost with this name.
+
+```
+version: '3.7'
+
+services:
+  currency-exchange:
+    image: nithin2889/mmv2-currency-exchange-service:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8000:8000"
+    networks:
+      - currency-network
+    depends_on:
+      - naming-server
+    environment:
+      - EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+      - SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411
+
+  currency-conversion:
+    image: nithin2889/mmv2-currency-conversion-service:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8100:8100"
+    networks:
+      - currency-network
+    depends_on:
+      - naming-server
+    environment:
+      - EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+      - SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411
+
+  api-gateway:
+    image: nithin2889/mmv2-api-gateway:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8765:8765"
+    networks:
+      - currency-network
+    depends_on:
+      - naming-server
+    environment:
+      - EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+      - SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411
+  
+  naming-server:
+    image: nithin2889/mmv2-naming-server:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8761:8761"
+    networks:
+      - currency-network
+
+  zipkin-server:
+    image: openzipkin/zipkin:2.23
+    mem_limit: 300m
+    ports:
+      - "9411:9411"
+    networks:
+      - currency-network
+
+networks:
+  currency-network:
+```
+
+Now, we are ready to launch the `docker compose up`. There are 5 components, 2 of which are microservices and we have a naming 
+server, API gateway, and the Zipkin Server being launched up. At the end of the process, you should be able to launch up Eureka and 
+in which we can see **API Gateway, CurrencyConversion and CurrencyExchange microservices** being registered. If you run the Zipkin 
+Server, it should also be working at `http://localhost:9411`. However, as we talked earlier, having a RabbitMQ in between will add 
+more resiliency. If ever the distributed tracing server is down, then all these microservices can put information on the queue and we 
+can pick up the information from the queue in the distributed tracing server.
+
+## **Running Zipkin and RabbitMQ with Docker Compose**
+Let's get all the microspheres communicating to the distributor tracing server through RabbitMQ. However, there are a few 
+prerequisites for communicating through RabbitMQ. Number one is you need to have the below dependency in your pom.xml. This is the 
+one which we need so that we can communicate over RabbitMQ to this Zipkin server. 
+
+```
+<dependency>
+  <groupId>org.springframework.amqp</groupId>
+  <artifactId>spring-rabbit</artifactId>
+</dependency>
+```
+
+There is one more property that we would need to configure to make the microservices to send the data to the Zipkin over RabbitMQ. 
+The configuration is `spring.zipkin.sender.type=rabbit`. Typically HTTP is used. Earlier we configured HTTP URL as 
+http://localhost:9411/zipkin in microservices. But now we would want to go for Rabbit MQ. So we need to configure the URL for the 
+RabbitMQ in our `docker-compose.yaml` file. RabbitMQ has a communications port as well as a management port.
+
+```
+version: '3.7'
+
+services:
+  currency-exchange:
+    image: nithin2889/mmv2-currency-exchange-service:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8000:8000"
+    networks:
+      - currency-network
+    depends_on:
+      - naming-server
+    environment:
+      - EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+      - SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411
+
+  currency-conversion:
+    image: nithin2889/mmv2-currency-conversion-service:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8100:8100"
+    networks:
+      - currency-network
+    depends_on:
+      - naming-server
+    environment:
+      - EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+      - SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411
+
+  api-gateway:
+    image: nithin2889/mmv2-api-gateway:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8765:8765"
+    networks:
+      - currency-network
+    depends_on:
+      - naming-server
+    environment:
+      - EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+      - SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411
+  
+  naming-server:
+    image: nithin2889/mmv2-naming-server:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8761:8761"
+    networks:
+      - currency-network
+
+  zipkin-server:
+    image: openzipkin/zipkin:2.23
+    mem_limit: 300m
+    ports:
+      - "9411:9411"
+    networks:
+      - currency-network
+  
+  rabbitmq:
+    image: rabbitmq:3.5.3-management
+    mem_limit: 300m
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - currency-network
+
+networks:
+  currency-network:
+```
+
+However, we need to add a little bit more information out to all our microservices so that they can actually talk to RabbitMQ. The 
+things that we would need to add in are
+
+```
+RABBIT_URI: amqp://guest:guest@rabbitmq:5672
+SPRING_RABBITMQ_HOST: rabbitmq
+SPRING_ZIPKIN_SENDER_TYPE: rabbit
+```
+
+SPRING_ZIPKIN_SENDER_TYPE is nothing but the property `spring.zipkin.sender.type=rabbit` that we would want to configure.
+
+```
+version: '3.7'
+
+services:
+  currency-exchange:
+    image: nithin2889/mmv2-currency-exchange-service:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8000:8000"
+    networks:
+      - currency-network
+    depends_on:
+      - naming-server
+      - rabbitmq
+    environment:
+      - EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+      - SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411
+      - RABBIT_URI: amqp://guest:guest@rabbitmq:5672
+      - SPRING_RABBITMQ_HOST: rabbitmq
+      - SPRING_ZIPKIN_SENDER_TYPE: rabbit
+
+  currency-conversion:
+    image: nithin2889/mmv2-currency-conversion-service:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8100:8100"
+    networks:
+      - currency-network
+    depends_on:
+      - naming-server
+      - rabbitmq
+    environment:
+      - EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+      - SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411
+      - RABBIT_URI: amqp://guest:guest@rabbitmq:5672
+      - SPRING_RABBITMQ_HOST: rabbitmq
+      - SPRING_ZIPKIN_SENDER_TYPE: rabbit
+
+  api-gateway:
+    image: nithin2889/mmv2-api-gateway:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8765:8765"
+    networks:
+      - currency-network
+    depends_on:
+      - naming-server
+      - rabbitmq
+    environment:
+      - EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-server:8761/eureka
+      - SPRING.ZIPKIN.BASEURL: http://zipkin-server:9411
+      - RABBIT_URI: amqp://guest:guest@rabbitmq:5672
+      - SPRING_RABBITMQ_HOST: rabbitmq
+      - SPRING_ZIPKIN_SENDER_TYPE: rabbit
+  
+  naming-server:
+    image: nithin2889/mmv2-naming-server:0.0.1-SNAPSHOT
+    mem_limit: 700m
+    ports:
+      - "8761:8761"
+    networks:
+      - currency-network
+
+  zipkin-server:
+    image: openzipkin/zipkin:2.23
+    mem_limit: 300m
+    ports:
+      - "9411:9411"
+    networks:
+      - currency-network
+    depends_on:
+      - rabbitmq
+    environment:
+      RABBIT_URI: amqp://guest:guest@rabbitmq:5672
+  
+  rabbitmq:
+    image: rabbitmq:3.5.3-management
+    mem_limit: 300m
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - currency-network
+
+networks:
+  currency-network:
+```
+
+Now, we are ready to launch the `docker compose up`. There are 6 components, 2 of which are microservices and we have a naming 
+server, API gateway, Zipkin Server and also a RabbitMQ being launched up. At the end of the process, you should be able to launch up 
+Eureka and in which we can see **API Gateway, CurrencyConversion and CurrencyExchange microservices** being registered. If you run 
+the Zipkin Server, it should also be working at `http://localhost:9411`. 
+
+Now, we have an entire architecture that we wanted to build being launched up with single command and that's the magic which docker and docker compose enable.
